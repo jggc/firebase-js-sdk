@@ -65,8 +65,10 @@ export class SchemaConverter implements SimpleDbSchemaConverter {
     fromVersion: number,
     toVersion: number
   ): PersistencePromise<void> {
-    debug(LOG_TAG,
-          `Creating or upgrading indexedDb schema from v${fromVersion} to v${toVersion}`);
+    debug(
+      LOG_TAG,
+      `Creating or upgrading indexedDb schema from v${fromVersion} to v${toVersion}`
+    );
     assert(
       fromVersion < toVersion &&
         fromVersion >= 0 &&

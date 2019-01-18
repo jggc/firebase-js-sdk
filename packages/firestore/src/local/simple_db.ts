@@ -41,7 +41,6 @@ export interface SimpleDbSchemaConverter {
  * See PersistencePromise for more details.
  */
 export class SimpleDb {
-
   /**
    * Builder to creater a SimpleDb instance with all properties required so it can recreate its
    * IDBDatabase on its own with the same name, version and schemaConverter
@@ -49,15 +48,17 @@ export class SimpleDb {
    * This builder is actually a workaround so that the constructor still takes only 1 argument
    * for tests to be able to create a SimpleDb instance without the self healing mechanism
    */
-  static buildWithMetadata(database: IDBDatabase,
+  static buildWithMetadata(
+    database: IDBDatabase,
     name: string,
     version: number,
-    schemaConverter: SimpleDbSchemaConverter) : SimpleDb{
-      const simpleDb = new SimpleDb(database);
-      simpleDb.setName(name);
-      simpleDb.setVersion(version);
-      simpleDb.setSchemaConverter(schemaConverter);
-      return simpleDb;
+    schemaConverter: SimpleDbSchemaConverter
+  ): SimpleDb {
+    const simpleDb = new SimpleDb(database);
+    simpleDb.setName(name);
+    simpleDb.setVersion(version);
+    simpleDb.setSchemaConverter(schemaConverter);
+    return simpleDb;
   }
   /**
    * Opens the specified database, creating or upgrading it if necessary.
@@ -80,8 +81,7 @@ export class SimpleDb {
       name,
       version,
       schemaConverter
-    )
-      .then((db: IDBDatabase) => {
+    ).then((db: IDBDatabase) => {
       return SimpleDb.buildWithMetadata(db, name, version, schemaConverter);
     });
   }
@@ -223,26 +223,38 @@ export class SimpleDb {
     return txn.store<KeyType, ValueType>(store);
   }
 
-  private schemaConverter : SimpleDbSchemaConverter;
-  private name : string;
-  private version : number;
-  constructor(
-  private db: IDBDatabase){}
+  private schemaConverter: SimpleDbSchemaConverter;
+  private name: string;
+  private version: number;
+  constructor(private db: IDBDatabase) {}
 
-  getDb() : Promise<IDBDatabase> {
-    if (this.name === undefined
-      || this.version === undefined
-      || this.schemaConverter === undefined) {
-      error(LOG_TAG, 'getDb simply returning db, not enough state to build a new IDBDatabase');
+  getDb(): Promise<IDBDatabase> {
+    if (
+      this.name === undefined ||
+      this.version === undefined ||
+      this.schemaConverter === undefined
+    ) {
+      error(
+        LOG_TAG,
+        'getDb simply returning db, not enough state to build a new IDBDatabase'
+      );
       return new Promise(resolve => resolve(this.db));
     }
-    debug(LOG_TAG, 'getDb() Getting new connection to ', this.name, this.version);
-    return SimpleDb.openOrCreateIDBDatabase(this.name, this.version, this.schemaConverter)
-      .then((db) => {
-        this.db.close();
-        this.db = db;
-        return this.db;
-      });
+    debug(
+      LOG_TAG,
+      'getDb() Getting new connection to ',
+      this.name,
+      this.version
+    );
+    return SimpleDb.openOrCreateIDBDatabase(
+      this.name,
+      this.version,
+      this.schemaConverter
+    ).then(db => {
+      this.db.close();
+      this.db = db;
+      return this.db;
+    });
   }
 
   setVersion(version: number): void {
@@ -282,15 +294,23 @@ export class SimpleDb {
     return transaction.completionPromise.then(() => transactionFnResult);
   }*/
 
-
   runTransaction<T>(
     mode: 'readonly' | 'readwrite',
     objectStores: string[],
     transactionFn: (transaction: SimpleDbTransaction) => PersistencePromise<T>
   ): Promise<T> {
     return this.getDb().then((database: IDBDatabase) => {
-      debug(LOG_TAG, 'Running SimpleDb transaction on database: ', this.name, this.version);
-      const transaction = SimpleDbTransaction.open(database, mode, objectStores);
+      debug(
+        LOG_TAG,
+        'Running SimpleDb transaction on database: ',
+        this.name,
+        this.version
+      );
+      const transaction = SimpleDbTransaction.open(
+        database,
+        mode,
+        objectStores
+      );
       const transactionFnResult = transactionFn(transaction)
         .catch(error => {
           // Abort the transaction if there was an error.
