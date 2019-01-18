@@ -1,5 +1,5 @@
 {
-  "name": "@firebase/firestore",
+  "name": "firestore-jggc",
   "version": "1.0.0",
   "description": "",
   "author": "Firebase <firebase-support@google.com> (https://firebase.google.com/)",
@@ -74,10 +74,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/firebase/firebase-js-sdk/tree/master/packages/firestore"
+    "url": "https://github.com/jggc/firebase-js-sdk/tree/master/packages/firestore"
   },
   "bugs": {
-    "url": "https://github.com/firebase/firebase-js-sdk/issues"
+    "url": "https://github.com/jggc/firebase-js-sdk/issues"
   },
   "typings": "dist/index.d.ts",
   "nyc": {
