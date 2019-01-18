@@ -16,7 +16,7 @@
 
 import { assert } from '../util/assert';
 import { Code, FirestoreError } from '../util/error';
-import { debug } from '../util/log';
+import { debug, error } from '../util/log';
 import { AnyJs } from '../util/misc';
 import { Deferred } from '../util/promise';
 import { SCHEMA_VERSION } from './indexeddb_schema';
@@ -41,6 +41,24 @@ export interface SimpleDbSchemaConverter {
  * See PersistencePromise for more details.
  */
 export class SimpleDb {
+
+  /**
+   * Builder to creater a SimpleDb instance with all properties required so it can recreate its
+   * IDBDatabase on its own with the same name, version and schemaConverter
+   *
+   * This builder is actually a workaround so that the constructor still takes only 1 argument
+   * for tests to be able to create a SimpleDb instance without the self healing mechanism
+   */
+  static buildWithMetadata(database: IDBDatabase,
+    name: string,
+    version: number,
+    schemaConverter: SimpleDbSchemaConverter) : SimpleDb{
+      const simpleDb = new SimpleDb(database);
+      simpleDb.setName(name);
+      simpleDb.setVersion(version);
+      simpleDb.setSchemaConverter(schemaConverter);
+      return simpleDb;
+  }
   /**
    * Opens the specified database, creating or upgrading it if necessary.
    *
@@ -58,8 +76,23 @@ export class SimpleDb {
       SimpleDb.isAvailable(),
       'IndexedDB not supported in current environment.'
     );
+    return SimpleDb.openOrCreateIDBDatabase(
+      name,
+      version,
+      schemaConverter
+    )
+      .then((db: IDBDatabase) => {
+      return SimpleDb.buildWithMetadata(db, name, version, schemaConverter);
+    });
+  }
+
+  static openOrCreateIDBDatabase(
+    name: string,
+    version: number,
+    schemaConverter: SimpleDbSchemaConverter
+  ): Promise<IDBDatabase> {
     debug(LOG_TAG, 'Opening database:', name);
-    return new PersistencePromise<SimpleDb>((resolve, reject) => {
+    return new PersistencePromise<IDBDatabase>((resolve, reject) => {
       // TODO(mikelehen): Investigate browser compatibility.
       // https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB
       // suggests IE9 and older WebKit browsers handle upgrade
@@ -69,7 +102,16 @@ export class SimpleDb {
 
       request.onsuccess = (event: Event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-        resolve(new SimpleDb(db));
+
+        db.onerror = (event: Event) => {
+          error(LOG_TAG, 'IDBDatabase onerror called', name, event);
+        };
+
+        db.onclose = (event: Event) => {
+          debug(LOG_TAG, 'IDBDatabase onclose called', name, event);
+        };
+
+        resolve(db);
       };
 
       request.onblocked = () => {
@@ -181,8 +223,41 @@ export class SimpleDb {
     return txn.store<KeyType, ValueType>(store);
   }
 
-  constructor(private db: IDBDatabase) {}
+  private schemaConverter : SimpleDbSchemaConverter;
+  private name : string;
+  private version : number;
+  constructor(
+  private db: IDBDatabase){}
 
+  getDb() : Promise<IDBDatabase> {
+    if (this.name === undefined
+      || this.version === undefined
+      || this.schemaConverter === undefined) {
+      error(LOG_TAG, 'getDb simply returning db, not enough state to build a new IDBDatabase');
+      return new Promise(resolve => resolve(this.db));
+    }
+    debug(LOG_TAG, 'getDb() Getting new connection to ', this.name, this.version);
+    return SimpleDb.openOrCreateIDBDatabase(this.name, this.version, this.schemaConverter)
+      .then((db) => {
+        this.db.close();
+        this.db = db;
+        return this.db;
+      });
+  }
+
+  setVersion(version: number): void {
+    this.version = version;
+  }
+
+  setName(name: string): void {
+    this.name = name;
+  }
+
+  setSchemaConverter(schemaConverter: SimpleDbSchemaConverter): void {
+    this.schemaConverter = schemaConverter;
+  }
+
+  /*
   runTransaction<T>(
     mode: 'readonly' | 'readwrite',
     objectStores: string[],
@@ -205,6 +280,34 @@ export class SimpleDb {
     // fire), but still return the original transactionFnResult back to the
     // caller.
     return transaction.completionPromise.then(() => transactionFnResult);
+  }*/
+
+
+  runTransaction<T>(
+    mode: 'readonly' | 'readwrite',
+    objectStores: string[],
+    transactionFn: (transaction: SimpleDbTransaction) => PersistencePromise<T>
+  ): Promise<T> {
+    return this.getDb().then((database: IDBDatabase) => {
+      debug(LOG_TAG, 'Running SimpleDb transaction on database: ', this.name, this.version);
+      const transaction = SimpleDbTransaction.open(database, mode, objectStores);
+      const transactionFnResult = transactionFn(transaction)
+        .catch(error => {
+          // Abort the transaction if there was an error.
+          transaction.abort(error);
+          // We cannot actually recover, and calling `abort()` will cause the transaction's
+          // completion promise to be rejected. This in turn means that we won't use
+          // `transactionFnResult` below. We return a rejection here so that we don't add the
+          // possibility of returning `void` to the type of `transactionFnResult`.
+          return PersistencePromise.reject<T>(error);
+        })
+        .toPromise();
+
+      // Wait for the transaction to complete (i.e. IndexedDb's onsuccess event to
+      // fire), but still return the original transactionFnResult back to the
+      // caller.
+      return transaction.completionPromise.then(() => transactionFnResult);
+    });
   }
 
   close(): void {

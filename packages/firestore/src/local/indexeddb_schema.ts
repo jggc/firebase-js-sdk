@@ -18,6 +18,7 @@ import { BatchId, ListenSequenceNumber, TargetId } from '../core/types';
 import { ResourcePath } from '../model/path';
 import * as api from '../protos/firestore_proto_api';
 import { assert } from '../util/assert';
+import { debug } from '../util/log';
 
 import { SnapshotVersion } from '../core/snapshot_version';
 import { BATCHID_UNKNOWN } from '../model/mutation_batch';
@@ -45,6 +46,8 @@ import { SimpleDbSchemaConverter, SimpleDbTransaction } from './simple_db';
  */
 export const SCHEMA_VERSION = 7;
 
+const LOG_TAG = 'IndexedDBSchema';
+
 /** Performs database creation and schema upgrades. */
 export class SchemaConverter implements SimpleDbSchemaConverter {
   constructor(private readonly serializer: LocalSerializer) {}
@@ -62,6 +65,8 @@ export class SchemaConverter implements SimpleDbSchemaConverter {
     fromVersion: number,
     toVersion: number
   ): PersistencePromise<void> {
+    debug(LOG_TAG,
+          `Creating or upgrading indexedDb schema from v${fromVersion} to v${toVersion}`);
     assert(
       fromVersion < toVersion &&
         fromVersion >= 0 &&
