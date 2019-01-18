@@ -1,6 +1,6 @@
 {
   "name": "@firebase/testing",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "description": "",
   "author": "Firebase <firebase-support@google.com> (https://firebase.google.com/)",
   "main": "dist/index.cjs.js",
@@ -10,14 +10,14 @@
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "test": "TS_NODE_CACHE=NO nyc --reporter lcovonly -- mocha 'test/{,!(browser)/**/}*.test.ts' --require ts-node/register/type-check --retries 5 --timeout 5000 --exit",
+    "test": "TS_NODE_CACHE=NO nyc --reporter lcovonly -- mocha 'test/{,!(browser)/**/}*.test.ts' --opts ../../config/mocha.node.opts",
     "prepare": "npm run build"
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "firebase": "5.7.2",
-    "@firebase/logger": "0.1.2",
-    "@firebase/util": "0.2.3",
+    "firebase": "5.8.0",
+    "@firebase/logger": "0.1.4",
+    "@firebase/util": "0.2.5",
     "@types/request": "2.47.1",
     "grpc": "1.17.0",
     "request": "2.88.0"

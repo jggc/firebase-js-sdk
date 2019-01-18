@@ -340,16 +340,15 @@ export class JsonProtoSerializer {
   }
 
   toQueryPath(path: ResourcePath): string {
-    if (path.length === 0) {
-      // If the path is empty, the backend requires we leave off the /documents
-      // at the end.
-      return this.encodedDatabaseId;
-    }
     return this.toResourceName(this.databaseId, path);
   }
 
   fromQueryPath(name: string): ResourcePath {
     const resourceName = this.fromResourceName(name);
+    // In v1beta1 queries for collections at the root did not have a trailing
+    // "/documents". In v1 all resource paths contain "/documents". Preserve the
+    // ability to read the v1beta1 form for compatibility with queries persisted
+    // in the local query cache.
     if (resourceName.length === 4) {
       return ResourcePath.EMPTY_PATH;
     }

@@ -33,14 +33,12 @@ export const USE_EMULATOR = !!EMULATOR_PORT;
 
 const EMULATOR_FIRESTORE_SETTING = {
   host: `localhost:${EMULATOR_PORT}`,
-  ssl: false,
-  timestampsInSnapshots: true
+  ssl: false
 };
 
 const PROD_FIRESTORE_SETTING = {
   host: 'firestore.googleapis.com',
-  ssl: true,
-  timestampsInSnapshots: true
+  ssl: true
 };
 
 export const DEFAULT_SETTINGS = getDefaultSettings();

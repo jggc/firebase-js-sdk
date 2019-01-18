@@ -131,8 +131,7 @@ function initializeApp(
   if (projectId) {
     app.firestore().settings({
       host: FIRESTORE_ADDRESS,
-      ssl: false,
-      timestampsInSnapshots: true
+      ssl: false
     });
   }
   /**
