@@ -190,14 +190,14 @@ export class FirestoreClient {
       } else {
         this.asyncQueue.enqueueAndForget(() => {
           return this.handleCredentialChange(user);
-        });
+        }, 'FirestoreClient.start setChangeListener');
       }
     });
 
     // Block the async queue until initialization is done
     this.asyncQueue.enqueueAndForget(() => {
       return initializationDone.promise;
-    });
+    }, 'FirestoreClient.start blocking async queue initializationDone');
 
     // Return only the result of enabling persistence. Note that this does not
     // need to await the completion of initializationDone because the result of
@@ -209,7 +209,7 @@ export class FirestoreClient {
   enableNetwork(): Promise<void> {
     return this.asyncQueue.enqueue(() => {
       return this.syncEngine.enableNetwork();
-    });
+    }, 'enableNetwork');
   }
 
   /**
@@ -467,7 +467,7 @@ export class FirestoreClient {
   disableNetwork(): Promise<void> {
     return this.asyncQueue.enqueue(() => {
       return this.syncEngine.disableNetwork();
-    });
+    }, 'FirestoreClient.disableNetwork');
   }
 
   shutdown(options?: {
@@ -488,7 +488,7 @@ export class FirestoreClient {
       // RemoteStore as it will prevent the RemoteStore from retrieving
       // auth tokens.
       this.credentials.removeChangeListener();
-    });
+    }, 'FirestoreClient.shutdown');
   }
 
   listen(
@@ -499,21 +499,21 @@ export class FirestoreClient {
     const listener = new QueryListener(query, observer, options);
     this.asyncQueue.enqueueAndForget(() => {
       return this.eventMgr.listen(listener);
-    });
+    }, 'FirestoreClient.listen');
     return listener;
   }
 
   unlisten(listener: QueryListener): void {
     this.asyncQueue.enqueueAndForget(() => {
       return this.eventMgr.unlisten(listener);
-    });
+    }, 'FirestoreClient.unlisten');
   }
 
   getDocumentFromLocalCache(docKey: DocumentKey): Promise<Document | null> {
     return this.asyncQueue
       .enqueue(() => {
         return this.localStore.readDocument(docKey);
-      })
+      }, 'FirestoreClient.getDocumentFromLocalCache')
       .then((maybeDoc: MaybeDocument | null) => {
         if (maybeDoc instanceof Document) {
           return maybeDoc;
@@ -535,7 +535,7 @@ export class FirestoreClient {
     return this.asyncQueue
       .enqueue(() => {
         return this.localStore.executeQuery(query);
-      })
+      }, 'FirestoreClient.getDocumentsFromLocalCache')
       .then((docs: DocumentMap) => {
         const remoteKeys: DocumentKeySet = documentKeySet();
 
@@ -552,8 +552,9 @@ export class FirestoreClient {
 
   write(mutations: Mutation[]): Promise<void> {
     const deferred = new Deferred<void>();
-    this.asyncQueue.enqueueAndForget(() =>
-      this.syncEngine.write(mutations, deferred)
+    this.asyncQueue.enqueueAndForget(
+      () => this.syncEngine.write(mutations, deferred),
+      'FirestoreClient.write'
     );
     return deferred.promise;
   }
@@ -567,7 +568,7 @@ export class FirestoreClient {
   ): Promise<T> {
     // We have to wait for the async queue to be sure syncEngine is initialized.
     return this.asyncQueue
-      .enqueue(async () => {})
+      .enqueue(async () => {}, 'FirestoreClient.transaction')
       .then(() => this.syncEngine.runTransaction(updateFunction));
   }
 }

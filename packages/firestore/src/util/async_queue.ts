@@ -20,6 +20,8 @@ import * as log from './log';
 import { Unknown } from './misc';
 import { CancelablePromise, Deferred } from './promise';
 
+const LOG_TAG = 'AsyncQueue';
+
 // tslint:disable-next-line:no-any Accept any return type from setTimeout().
 type TimerHandle = any;
 
@@ -81,7 +83,8 @@ class DelayedOperation<T extends Unknown> implements CancelablePromise<T> {
     readonly timerId: TimerId,
     readonly targetTimeMs: number,
     private readonly op: () => Promise<T>,
-    private readonly removalCallback: (op: DelayedOperation<T>) => void
+    private readonly removalCallback: (op: DelayedOperation<T>) => void,
+    private readonly opName?: string
   ) {
     // It's normal for the deferred promise to be canceled (due to cancellation)
     // and so we attach a dummy catch callback to avoid
@@ -108,7 +111,8 @@ class DelayedOperation<T extends Unknown> implements CancelablePromise<T> {
     timerId: TimerId,
     delayMs: number,
     op: () => Promise<R>,
-    removalCallback: (op: DelayedOperation<R>) => void
+    removalCallback: (op: DelayedOperation<R>) => void,
+    opName?: string
   ): DelayedOperation<R> {
     const targetTime = Date.now() + delayMs;
     const delayedOp = new DelayedOperation(
@@ -116,7 +120,8 @@ class DelayedOperation<T extends Unknown> implements CancelablePromise<T> {
       timerId,
       targetTime,
       op,
-      removalCallback
+      removalCallback,
+      opName
     );
     delayedOp.start(delayMs);
     return delayedOp;
@@ -172,7 +177,7 @@ class DelayedOperation<T extends Unknown> implements CancelablePromise<T> {
       } else {
         return Promise.resolve();
       }
-    });
+    }, `HandleDelayElapsed Op: ${this.opName}`);
   }
 
   private clearTimeout(): void {
@@ -203,21 +208,30 @@ export class AsyncQueue {
    * Adds a new operation to the queue without waiting for it to complete (i.e.
    * we ignore the Promise result).
    */
-  enqueueAndForget<T extends Unknown>(op: () => Promise<T>): void {
+  enqueueAndForget<T extends Unknown>(
+    op: () => Promise<T>,
+    operationName?: string
+  ): void {
     // tslint:disable-next-line:no-floating-promises
-    this.enqueue(op);
+    this.enqueue(op, operationName);
   }
 
   /**
    * Adds a new operation to the queue. Returns a promise that will be resolved
    * when the promise returned by the new operation is (with its value).
    */
-  enqueue<T extends Unknown>(op: () => Promise<T>): Promise<T> {
+  enqueue<T extends Unknown>(
+    op: () => Promise<T>,
+    operationName?: string
+  ): Promise<T> {
     this.verifyNotFailed();
+    log.debug(LOG_TAG, `Adding new operation to queue: ${operationName}`);
     const newTail = this.tail.then(() => {
+      log.debug(LOG_TAG, `Running operation: ${operationName} in Async Queue`);
       this.operationInProgress = true;
       return op()
         .catch(error => {
+          log.debug(LOG_TAG, `Operation error: ${operationName}`);
           this.failure = error;
           this.operationInProgress = false;
           const message = error.stack || error.message || '';
@@ -238,6 +252,7 @@ export class AsyncQueue {
           throw error;
         })
         .then(result => {
+          log.debug(LOG_TAG, `Operation completed: ${operationName}`);
           this.operationInProgress = false;
           return result;
         });
@@ -254,7 +269,8 @@ export class AsyncQueue {
   enqueueAfterDelay<T extends Unknown>(
     timerId: TimerId,
     delayMs: number,
-    op: () => Promise<T>
+    op: () => Promise<T>,
+    opName?: string
   ): CancelablePromise<T> {
     this.verifyNotFailed();
 
@@ -275,7 +291,8 @@ export class AsyncQueue {
       timerId,
       delayMs,
       op,
-      op => this.removeDelayedOperation(op)
+      op => this.removeDelayedOperation(op),
+      opName
     );
     this.delayedOperations.push(delayedOp);
 
@@ -309,7 +326,7 @@ export class AsyncQueue {
    * operations are not run.
    */
   drain(): Promise<void> {
-    return this.enqueue(() => Promise.resolve());
+    return this.enqueue(() => Promise.resolve(), 'AsyncQueue.drain');
   }
 
   /**
