@@ -112,7 +112,8 @@ export class OnlineStateTracker {
           // but this is non-harmful.
 
           return Promise.resolve();
-        }
+        },
+        'OnlineStateTracker.handleWatchStreamStart'
       );
     }
   }

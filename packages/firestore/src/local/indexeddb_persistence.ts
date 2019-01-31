@@ -169,6 +169,7 @@ export class IndexedDbTransaction extends PersistenceTransaction {
 export type MultiClientParams = {
   sequenceNumberSyncer: SequenceNumberSyncer;
 };
+
 export class IndexedDbPersistence implements Persistence {
   static getStore<Key extends IDBValidKey, Value>(
     txn: PersistenceTransaction,
@@ -388,7 +389,7 @@ export class IndexedDbPersistence implements Persistence {
         if (this.started) {
           await this.updateClientMetadataAndTryBecomePrimary();
         }
-      });
+      }, 'IndexedDbPersistence.setNetworkEnabled');
     }
   }
 
@@ -416,8 +417,9 @@ export class IndexedDbPersistence implements Persistence {
             return this.verifyPrimaryLease(txn).next(success => {
               if (!success) {
                 this.isPrimary = false;
-                this.queue.enqueueAndForget(() =>
-                  this.primaryStateListener(false)
+                this.queue.enqueueAndForget(
+                  () => this.primaryStateListener(false),
+                  'IndexedDbPersistence.updateClientMetadataAndTryBecomePrimary.verifyPrimaryLease'
                 );
               }
             });
@@ -429,8 +431,9 @@ export class IndexedDbPersistence implements Persistence {
           this.isPrimary = canActAsPrimary;
 
           if (wasPrimary !== this.isPrimary) {
-            this.queue.enqueueAndForget(() =>
-              this.primaryStateListener(this.isPrimary)
+            this.queue.enqueueAndForget(
+              () => this.primaryStateListener(this.isPrimary),
+              'IndexedDbPersistence.updateClientMetadataAndTryBecomePrimary.canActAsPrimary'
             );
           }
 
@@ -549,7 +552,8 @@ export class IndexedDbPersistence implements Persistence {
         return this.updateClientMetadataAndTryBecomePrimary()
           .then(() => this.maybeGarbageCollectMultiClientState())
           .then(() => this.scheduleClientMetadataAndPrimaryLeaseRefreshes());
-      }
+      },
+      'IndexedDbPersistence.scheduleClientMetadataAndPrimaryLeaseRefreshes'
     );
   }
 
@@ -784,8 +788,9 @@ export class IndexedDbPersistence implements Persistence {
                   `Failed to obtain primary lease for action '${action}'.`
                 );
                 this.isPrimary = false;
-                this.queue.enqueueAndForget(() =>
-                  this.primaryStateListener(false)
+                this.queue.enqueueAndForget(
+                  () => this.primaryStateListener(false),
+                  'IndexedDbPersistence.runTransaction.verifyPrimaryLease'
                 );
                 throw new FirestoreError(
                   Code.FAILED_PRECONDITION,
@@ -923,7 +928,7 @@ export class IndexedDbPersistence implements Persistence {
         this.queue.enqueueAndForget(() => {
           this.inForeground = this.document!.visibilityState === 'visible';
           return this.updateClientMetadataAndTryBecomePrimary();
-        });
+        }, 'IndexedDbPersistence.attachVisibilityHandler');
       };
 
       this.document.addEventListener(
@@ -972,7 +977,7 @@ export class IndexedDbPersistence implements Persistence {
           // Attempt graceful shutdown (including releasing our primary lease),
           // but there's no guarantee it will complete.
           return this.shutdown();
-        });
+        }, 'IndexedDbPersistence.attachWindowUnloadHook');
       };
       this.window.addEventListener('unload', this.windowUnloadHandler);
     }

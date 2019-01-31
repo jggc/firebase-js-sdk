@@ -92,6 +92,7 @@ export type ActiveTargets = {
 // The type and comparator for the items contained in the SortedSet used in
 // place of a priority queue for the RollingSequenceNumberBuffer.
 type BufferEntry = [ListenSequenceNumber, number];
+
 function bufferEntryComparator(
   [aSequence, aIndex]: BufferEntry,
   [bSequence, bIndex]: BufferEntry
@@ -268,7 +269,8 @@ export class LruScheduler {
           .collectGarbage(this.garbageCollector)
           .then(() => this.scheduleGC())
           .catch(ignoreIfPrimaryLeaseLoss);
-      }
+      },
+      'LruScheduler.scheduleGC'
     );
   }
 }
