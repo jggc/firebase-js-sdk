@@ -90,8 +90,7 @@ class DelayedOperation<T extends Unknown> implements CancelablePromise<T> {
     // It's normal for the deferred promise to be canceled (due to cancellation)
     // and so we attach a dummy catch callback to avoid
     // 'UnhandledPromiseRejectionWarning' log spam.
-    this.deferred.promise.catch(err => {
-    });
+    this.deferred.promise.catch(err => {});
   }
 
   /**
@@ -315,7 +314,7 @@ export class AsyncQueue {
     if (this.failure) {
       fail(
         'AsyncQueue is already failed: ' +
-        (this.failure.stack || this.failure.message)
+          (this.failure.stack || this.failure.message)
       );
     }
   }
@@ -367,7 +366,7 @@ export class AsyncQueue {
     return this.drain().then(() => {
       assert(
         lastTimerId === TimerId.All ||
-        this.containsDelayedOperation(lastTimerId),
+          this.containsDelayedOperation(lastTimerId),
         `Attempted to drain to missing operation ${lastTimerId}`
       );
 
