@@ -11504,7 +11504,7 @@ shelljs@~0.5:
   version "0.5.3"
   resolved "https://registry.npmjs.org/shelljs/-/shelljs-0.5.3.tgz#c54982b996c76ef0c1e6b59fbdc5825f5b713113"
 
-shortid@^2.2.14:
+shortid@2.2.14, shortid@^2.2.14:
   version "2.2.14"
   resolved "https://registry.npmjs.org/shortid/-/shortid-2.2.14.tgz#80db6aafcbc3e3a46850b3c88d39e051b84c8d18"
   dependencies:
