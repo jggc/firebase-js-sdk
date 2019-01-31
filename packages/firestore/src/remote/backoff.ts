@@ -17,6 +17,7 @@
 import { AsyncQueue, TimerId } from '../util/async_queue';
 import * as log from '../util/log';
 import { CancelablePromise } from '../util/promise';
+
 const LOG_TAG = 'ExponentialBackoff';
 
 /**
@@ -88,7 +89,7 @@ export class ExponentialBackoff {
    * delay for any subsequent attempts. If there was a pending backoff operation
    * already, it will be canceled.
    */
-  backoffAndRun(op: () => Promise<void>): void {
+  backoffAndRun(op: () => Promise<void>, opName?: string): void {
     // Cancel any pending backoff operation.
     this.cancel();
 
@@ -123,7 +124,8 @@ export class ExponentialBackoff {
       () => {
         this.lastAttemptTime = Date.now();
         return op();
-      }
+      },
+      `ExponentialBackoff.backoffAndRun: ${opName}`
     );
 
     // Apply backoff factor to determine next delay and ensure it is within

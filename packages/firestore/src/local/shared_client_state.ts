@@ -865,7 +865,7 @@ export class WebStorageSharedClientState implements SharedClientState {
             this.sequenceNumberHandler!(sequenceNumber);
           }
         }
-      });
+      }, 'WebStorageSharedClientState.handleWebStorageEvent');
     }
   }
 

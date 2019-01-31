@@ -40,9 +40,11 @@ const LOG_TAG = 'PersistentStream';
 interface ListenRequest extends api.ListenRequest {
   database?: string;
 }
+
 export interface WriteRequest extends api.WriteRequest {
   database?: string;
 }
+
 /**
  * PersistentStream can be in one of 5 states (each described in detail below)
  * based on the following state transition diagram:
@@ -279,7 +281,8 @@ export abstract class PersistentStream<
       this.idleTimer = this.queue.enqueueAfterDelay(
         this.idleTimerId,
         IDLE_TIMEOUT_MS,
-        () => this.handleIdleCloseTimer()
+        () => this.handleIdleCloseTimer(),
+        'PersistentStream.markIdle'
       );
     }
   }
@@ -475,7 +478,7 @@ export abstract class PersistentStream<
       this.state = PersistentStreamState.Initial;
       this.start();
       assert(this.isStarted(), 'PersistentStream should have started');
-    });
+    }, 'PersistentStream.performBackoff');
   }
 
   // Visible for tests
@@ -512,7 +515,7 @@ export abstract class PersistentStream<
           );
           return Promise.resolve();
         }
-      });
+      }, 'PersistentStream.getCloseGuardedDispatcher');
     };
   }
 }
