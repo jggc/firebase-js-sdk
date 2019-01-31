@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import * as shortid from 'shortid';
 import { assert, fail } from './assert';
 import { Code, FirestoreError } from './error';
 import * as log from './log';
@@ -224,14 +225,21 @@ export class AsyncQueue {
     op: () => Promise<T>,
     operationName?: string
   ): Promise<T> {
+    const operationId = shortid.generate();
+    log.debug(
+      LOG_TAG,
+      `Adding new operation ${operationId} to queue: ${operationName}`
+    );
     this.verifyNotFailed();
-    log.debug(LOG_TAG, `Adding new operation to queue: ${operationName}`);
     const newTail = this.tail.then(() => {
-      log.debug(LOG_TAG, `Running operation: ${operationName} in Async Queue`);
+      log.debug(LOG_TAG, `Running operation ${operationId}: ${operationName}`);
       this.operationInProgress = true;
       return op()
         .catch(error => {
-          log.debug(LOG_TAG, `Operation error: ${operationName}`);
+          log.debug(
+            LOG_TAG,
+            `Operation error ${operationId} : ${operationName}`
+          );
           this.failure = error;
           this.operationInProgress = false;
           const message = error.stack || error.message || '';
@@ -252,7 +260,10 @@ export class AsyncQueue {
           throw error;
         })
         .then(result => {
-          log.debug(LOG_TAG, `Operation completed: ${operationName}`);
+          log.debug(
+            LOG_TAG,
+            `Operation completed ${operationId} : ${operationName}`
+          );
           this.operationInProgress = false;
           return result;
         });
