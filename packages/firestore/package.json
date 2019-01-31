@@ -1,6 +1,6 @@
 {
   "name": "firestore-jggc",
-  "version": "1.0.2-jggc",
+  "version": "1.0.4-jggc",
   "description": "",
   "author": "Firebase <firebase-support@google.com> (https://firebase.google.com/)",
   "scripts": {
