@@ -1,6 +1,6 @@
 {
   "name": "firebase-jggc",
-  "version": "5.8.0-jggc-5",
+  "version": "5.8.0-jggc-8",
   "description": "Firebase JavaScript library for web and Node.js",
   "author": "Firebase <firebase-support@google.com> (https://firebase.google.com/)",
   "license": "Apache-2.0",
@@ -42,7 +42,7 @@
     "@firebase/messaging": "0.3.9",
     "@firebase/polyfill": "0.3.4",
     "@firebase/storage": "0.2.6",
-    "firestore-jggc": "1.0.4-jggc"
+    "firestore-jggc": "1.0.8-jggc"
   },
   "devDependencies": {
     "rollup": "0.57.1",
