@@ -28,8 +28,15 @@ import * as log from '../util/log';
 import { CancelablePromise } from '../util/promise';
 
 import { decode, encode, EncodedResourcePath } from './encoded_resource_path';
-import { IndexedDbMutationQueue, mutationQueuesContainKey } from './indexeddb_mutation_queue';
-import { documentTargetStore, getHighestListenSequenceNumber, IndexedDbQueryCache } from './indexeddb_query_cache';
+import {
+  IndexedDbMutationQueue,
+  mutationQueuesContainKey
+} from './indexeddb_mutation_queue';
+import {
+  documentTargetStore,
+  getHighestListenSequenceNumber,
+  IndexedDbQueryCache
+} from './indexeddb_query_cache';
 import { IndexedDbRemoteDocumentCache } from './indexeddb_remote_document_cache';
 import {
   ALL_STORES,
@@ -43,9 +50,19 @@ import {
   SchemaConverter
 } from './indexeddb_schema';
 import { LocalSerializer } from './local_serializer';
-import { ActiveTargets, LruDelegate, LruGarbageCollector, LruParams } from './lru_garbage_collector';
+import {
+  ActiveTargets,
+  LruDelegate,
+  LruGarbageCollector,
+  LruParams
+} from './lru_garbage_collector';
 import { MutationQueue } from './mutation_queue';
-import { Persistence, PersistenceTransaction, PrimaryStateListener, ReferenceDelegate } from './persistence';
+import {
+  Persistence,
+  PersistenceTransaction,
+  PrimaryStateListener,
+  ReferenceDelegate
+} from './persistence';
 import { PersistencePromise } from './persistence_promise';
 import { QueryData } from './query_data';
 import { ReferenceSet } from './reference_set';
@@ -300,7 +317,7 @@ export class IndexedDbPersistence implements Persistence {
    */
   private start(): Promise<void> {
     assert(!this.started, 'IndexedDbPersistence double-started!');
-    assert(this.window !== null, 'Expected \'window\' to be defined');
+    assert(this.window !== null, "Expected 'window' to be defined");
 
     return SimpleDb.openOrCreate(
       this.dbName,
@@ -399,13 +416,13 @@ export class IndexedDbPersistence implements Persistence {
             LOG_TAG,
             'updateClientMetadataAndTryBecomePrimary - Put DbClientMetadata'
           ) ||
-          new DbClientMetadata(
-            this.clientId,
-            Date.now(),
-            this.networkEnabled,
-            this.inForeground,
-            this.remoteDocumentCache.lastProcessedDocumentChangeId
-          )
+            new DbClientMetadata(
+              this.clientId,
+              Date.now(),
+              this.networkEnabled,
+              this.inForeground,
+              this.remoteDocumentCache.lastProcessedDocumentChangeId
+            )
         )
         .next(() => {
           log.debug(
@@ -436,10 +453,13 @@ export class IndexedDbPersistence implements Persistence {
             });
           }
         })
-        .next(() => log.debug(
-          LOG_TAG,
-          'updateClientMetadataAndTryBecomePrimary - canActAsPrimary'
-        ) || this.canActAsPrimary(txn))
+        .next(
+          () =>
+            log.debug(
+              LOG_TAG,
+              'updateClientMetadataAndTryBecomePrimary - canActAsPrimary'
+            ) || this.canActAsPrimary(txn)
+        )
         .next(canActAsPrimary => {
           const wasPrimary = this.isPrimary;
           this.isPrimary = canActAsPrimary;
@@ -447,7 +467,9 @@ export class IndexedDbPersistence implements Persistence {
           if (wasPrimary !== this.isPrimary) {
             this.queue.enqueueAndForget(
               () => this.primaryStateListener(this.isPrimary),
-              `updateClientMetadataAndTryBecomePrimary - primaryStateListener ${this.isPrimary}`
+              `updateClientMetadataAndTryBecomePrimary - primaryStateListener ${
+                this.isPrimary
+              }`
             );
           }
 
@@ -503,8 +525,10 @@ export class IndexedDbPersistence implements Persistence {
         'maybeGarbageCollectMultiClientState',
         'readwrite-primary',
         txn => {
-          const metadataStore = IndexedDbPersistence.getStore<DbClientMetadataKey,
-            DbClientMetadata>(txn, DbClientMetadata.store);
+          const metadataStore = IndexedDbPersistence.getStore<
+            DbClientMetadataKey,
+            DbClientMetadata
+          >(txn, DbClientMetadata.store);
 
           return metadataStore
             .loadAll()
@@ -680,7 +704,7 @@ export class IndexedDbPersistence implements Persistence {
             LOG_TAG,
             `Client ${
               canActAsPrimary ? 'is' : 'is not'
-              } eligible for a primary lease.`
+            } eligible for a primary lease.`
           );
         }
         return canActAsPrimary;
@@ -964,8 +988,8 @@ export class IndexedDbPersistence implements Persistence {
     if (this.documentVisibilityHandler) {
       assert(
         this.document !== null &&
-        typeof this.document.addEventListener === 'function',
-        'Expected \'document.addEventListener\' to be a function'
+          typeof this.document.addEventListener === 'function',
+        "Expected 'document.addEventListener' to be a function"
       );
       this.document!.removeEventListener(
         'visibilitychange',
@@ -1007,7 +1031,7 @@ export class IndexedDbPersistence implements Persistence {
     if (this.windowUnloadHandler) {
       assert(
         typeof this.window.removeEventListener === 'function',
-        'Expected \'window.removeEventListener\' to be a function'
+        "Expected 'window.removeEventListener' to be a function"
       );
       this.window.removeEventListener('unload', this.windowUnloadHandler);
       this.windowUnloadHandler = null;
@@ -1028,7 +1052,7 @@ export class IndexedDbPersistence implements Persistence {
         LOG_TAG,
         `Client '${clientId}' ${
           isZombied ? 'is' : 'is not'
-          } zombied in LocalStorage`
+        } zombied in LocalStorage`
       );
       return isZombied;
     } catch (e) {

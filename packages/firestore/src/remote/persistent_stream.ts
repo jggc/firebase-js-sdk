@@ -162,9 +162,11 @@ const IDLE_TIMEOUT_MS = 60 * 1000;
  *    connection stream
  *  ListenerType: The type of the listener that will be used for callbacks
  */
-export abstract class PersistentStream<SendType,
+export abstract class PersistentStream<
+  SendType,
   ReceiveType,
-  ListenerType extends PersistentStreamListener> {
+  ListenerType extends PersistentStreamListener
+> {
   private state = PersistentStreamState.Initial;
   /**
    * A close count that's incremented every time the stream is closed; used by
@@ -328,7 +330,7 @@ export abstract class PersistentStream<SendType,
     assert(this.isStarted(), 'Only started streams should be closed.');
     assert(
       finalState === PersistentStreamState.Error || isNullOrUndefined(error),
-      'Can\'t provide an error when not in an error state.'
+      "Can't provide an error when not in an error state."
     );
 
     // Cancel any outstanding timers (they're guaranteed not to execute).
@@ -374,8 +376,7 @@ export abstract class PersistentStream<SendType,
    * Can be overridden to perform additional cleanup before the stream is closed.
    * Calling super.tearDown() is not required.
    */
-  protected tearDown(): void {
-  }
+  protected tearDown(): void {}
 
   /**
    * Used by subclasses to start the concrete RPC and return the underlying
@@ -410,28 +411,19 @@ export abstract class PersistentStream<SendType,
     // TODO(mikelehen): Just use dispatchIfNotClosed, but see TODO below.
     const closeCount = this.closeCount;
 
-    log.debug(
-      LOG_TAG,
-      `auth - credentialsProvider.getToken`
-    );
+    log.debug(LOG_TAG, `auth - credentialsProvider.getToken`);
     this.credentialsProvider.getToken().then(
       token => {
         // Stream can be stopped while waiting for authentication.
         // TODO(mikelehen): We really should just use dispatchIfNotClosed
         // and let this dispatch onto the queue, but that opened a spec test can
         // of worms that I don't want to deal with in this PR.
-        log.debug(
-          LOG_TAG,
-          `auth - credentialsProvider.gotToken`
-        );
+        log.debug(LOG_TAG, `auth - credentialsProvider.gotToken`);
         if (this.closeCount === closeCount) {
           // Normally we'd have to schedule the callback on the AsyncQueue.
           // However, the following calls are safe to be called outside the
           // AsyncQueue since they don't chain asynchronous calls
-          log.debug(
-            LOG_TAG,
-            `auth - closeCount is same: calling startStream`
-          );
+          log.debug(LOG_TAG, `auth - closeCount is same: calling startStream`);
           this.startStream(token);
         }
       },
@@ -461,10 +453,7 @@ export abstract class PersistentStream<SendType,
 
     this.stream = this.startRpc(token);
     this.stream.onOpen(() => {
-      log.debug(
-        LOG_TAG,
-        'startStream - onOpen'
-      );
+      log.debug(LOG_TAG, 'startStream - onOpen');
       dispatchIfNotClosed(() => {
         assert(
           this.state === PersistentStreamState.Starting,
@@ -511,7 +500,7 @@ export abstract class PersistentStream<SendType,
 
   // Visible for tests
   handleStreamClose(error?: FirestoreError): Promise<void> {
-    assert(this.isStarted(), 'Can\'t handle server close on non-started stream');
+    assert(this.isStarted(), "Can't handle server close on non-started stream");
     log.debug(LOG_TAG, `close with error: ${error}`);
 
     this.stream = null;
@@ -567,9 +556,11 @@ export interface WatchStreamListener extends PersistentStreamListener {
  * listen() and unlisten() calls can be made to control what changes will be
  * sent from the server for ListenResponses.
  */
-export class PersistentListenStream extends PersistentStream<api.ListenRequest,
+export class PersistentListenStream extends PersistentStream<
+  api.ListenRequest,
   api.ListenResponse,
-  WatchStreamListener> {
+  WatchStreamListener
+> {
   constructor(
     queue: AsyncQueue,
     connection: Connection,
@@ -673,9 +664,11 @@ export interface WriteStreamListener extends PersistentStreamListener {
  *
  * TODO(b/33271235): Use proto types
  */
-export class PersistentWriteStream extends PersistentStream<api.WriteRequest,
+export class PersistentWriteStream extends PersistentStream<
+  api.WriteRequest,
   api.WriteResponse,
-  WriteStreamListener> {
+  WriteStreamListener
+> {
   private handshakeComplete_ = false;
 
   constructor(
