@@ -329,7 +329,7 @@ export class IndexedDbPersistence implements Persistence {
       })
       .then(() => this.startRemoteDocumentCache())
       .then(() => {
-        if (!window['cordova']){
+        if (!window['cordova']) {
           this.attachVisibilityHandler();
         }
         this.attachWindowUnloadHook();
