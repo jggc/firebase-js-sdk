@@ -243,7 +243,7 @@ export class IndexedDbPersistence implements Persistence {
 
   /** Our window.unload handler, if registered. */
   private windowUnloadHandler: (() => void) | null;
-  private inForeground = false;
+  private inForeground = !!window['cordova'];
 
   private serializer: LocalSerializer;
 
@@ -329,7 +329,9 @@ export class IndexedDbPersistence implements Persistence {
       })
       .then(() => this.startRemoteDocumentCache())
       .then(() => {
-        this.attachVisibilityHandler();
+        if (!window['cordova']){
+          this.attachVisibilityHandler();
+        }
         this.attachWindowUnloadHook();
         return this.updateClientMetadataAndTryBecomePrimary().then(() =>
           this.scheduleClientMetadataAndPrimaryLeaseRefreshes()
