@@ -243,7 +243,7 @@ export class IndexedDbPersistence implements Persistence {
 
   /** Our window.unload handler, if registered. */
   private windowUnloadHandler: (() => void) | null;
-  private inForeground = false;
+  private inForeground = !!window['cordova'];
 
   private serializer: LocalSerializer;
 
@@ -329,7 +329,9 @@ export class IndexedDbPersistence implements Persistence {
       })
       .then(() => this.startRemoteDocumentCache())
       .then(() => {
-        this.attachVisibilityHandler();
+        if (!window['cordova']) {
+          this.attachVisibilityHandler();
+        }
         this.attachWindowUnloadHook();
         return this.updateClientMetadataAndTryBecomePrimary().then(() =>
           this.scheduleClientMetadataAndPrimaryLeaseRefreshes()
@@ -400,32 +402,66 @@ export class IndexedDbPersistence implements Persistence {
    * primary lease.
    */
   private updateClientMetadataAndTryBecomePrimary(): Promise<void> {
+    log.debug(
+      LOG_TAG,
+      'updateClientMetadataAndTryBecomePrimary - Returning run transaction'
+    );
     return this.simpleDb.runTransaction('readwrite', ALL_STORES, txn => {
+      log.debug(
+        LOG_TAG,
+        'updateClientMetadataAndTryBecomePrimary - Getting metadataStore'
+      );
       const metadataStore = clientMetadataStore(txn);
       return metadataStore
         .put(
-          new DbClientMetadata(
-            this.clientId,
-            Date.now(),
-            this.networkEnabled,
-            this.inForeground,
-            this.remoteDocumentCache.lastProcessedDocumentChangeId
-          )
+          log.debug(
+            LOG_TAG,
+            'updateClientMetadataAndTryBecomePrimary - Put DbClientMetadata'
+          ) ||
+            new DbClientMetadata(
+              this.clientId,
+              Date.now(),
+              this.networkEnabled,
+              this.inForeground,
+              this.remoteDocumentCache.lastProcessedDocumentChangeId
+            )
         )
         .next(() => {
+          log.debug(
+            LOG_TAG,
+            'updateClientMetadataAndTryBecomePrimary - Is it primary?'
+          );
           if (this.isPrimary) {
+            log.debug(
+              LOG_TAG,
+              'updateClientMetadataAndTryBecomePrimary - verifyPrimaryLease'
+            );
             return this.verifyPrimaryLease(txn).next(success => {
+              log.debug(
+                LOG_TAG,
+                'updateClientMetadataAndTryBecomePrimary - verifyPrimaryLease - next'
+              );
               if (!success) {
+                log.debug(
+                  LOG_TAG,
+                  'updateClientMetadataAndTryBecomePrimary - verifyPrimaryLease - notSuccessful'
+                );
                 this.isPrimary = false;
                 this.queue.enqueueAndForget(
                   () => this.primaryStateListener(false),
-                  'IndexedDbPersistence.updateClientMetadataAndTryBecomePrimary.verifyPrimaryLease'
+                  `updateClientMetadataAndTryBecomePrimary - primaryStateListener -> false`
                 );
               }
             });
           }
         })
-        .next(() => this.canActAsPrimary(txn))
+        .next(
+          () =>
+            log.debug(
+              LOG_TAG,
+              'updateClientMetadataAndTryBecomePrimary - canActAsPrimary'
+            ) || this.canActAsPrimary(txn)
+        )
         .next(canActAsPrimary => {
           const wasPrimary = this.isPrimary;
           this.isPrimary = canActAsPrimary;
@@ -433,13 +469,23 @@ export class IndexedDbPersistence implements Persistence {
           if (wasPrimary !== this.isPrimary) {
             this.queue.enqueueAndForget(
               () => this.primaryStateListener(this.isPrimary),
-              'IndexedDbPersistence.updateClientMetadataAndTryBecomePrimary.canActAsPrimary'
+              `updateClientMetadataAndTryBecomePrimary - primaryStateListener ${
+                this.isPrimary
+              }`
             );
           }
 
           if (wasPrimary && !this.isPrimary) {
+            log.debug(
+              LOG_TAG,
+              'updateClientMetadataAndTryBecomePrimary - releasePrimaryLeaseIfHeld'
+            );
             return this.releasePrimaryLeaseIfHeld(txn);
           } else if (this.isPrimary) {
+            log.debug(
+              LOG_TAG,
+              'updateClientMetadataAndTryBecomePrimary - acquireOrExtendPrimaryLease'
+            );
             return this.acquireOrExtendPrimaryLease(txn);
           }
         });
@@ -928,7 +974,7 @@ export class IndexedDbPersistence implements Persistence {
         this.queue.enqueueAndForget(() => {
           this.inForeground = this.document!.visibilityState === 'visible';
           return this.updateClientMetadataAndTryBecomePrimary();
-        }, 'IndexedDbPersistence.attachVisibilityHandler');
+        }, 'IndexedDbPersistence.attachVisibilityHandler, updateClientMetadataAndTryBecomePrimary');
       };
 
       this.document.addEventListener(

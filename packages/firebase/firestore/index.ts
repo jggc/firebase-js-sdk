@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-import '@firebase/firestore';
+import 'firestore-jggc';

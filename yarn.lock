@@ -582,6 +582,16 @@
     lodash "^4.17.10"
     to-fast-properties "^2.0.0"
 
+"@firebase/firestore@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.npmjs.org/@firebase/firestore/-/firestore-1.0.0.tgz#c0af68ab3d44e58f0dbd6ce2059d7129a80cfe04"
+  dependencies:
+    "@firebase/firestore-types" "1.0.0"
+    "@firebase/logger" "0.1.4"
+    "@firebase/webchannel-wrapper" "0.2.11"
+    grpc "1.17.0"
+    tslib "1.9.0"
+
 "@google-cloud/common@^0.16.1":
   version "0.16.2"
   resolved "https://registry.npmjs.org/@google-cloud/common/-/common-0.16.2.tgz#029b3c7c4a425f1374045ba8f6a878bd50e4761c"
@@ -5216,6 +5226,19 @@ firebase@2.x.x:
   resolved "https://registry.npmjs.org/firebase/-/firebase-2.4.2.tgz#4e1119ec0396ca561d8a7acbff1630feac6c0a31"
   dependencies:
     faye-websocket ">=0.6.0"
+
+firebase@5.8.0:
+  version "5.8.0"
+  resolved "https://registry.npmjs.org/firebase/-/firebase-5.8.0.tgz#b9669b79cd079004eb7091440b585b322f844fb4"
+  dependencies:
+    "@firebase/app" "0.3.7"
+    "@firebase/auth" "0.9.1"
+    "@firebase/database" "0.3.10"
+    "@firebase/firestore" "1.0.0"
+    "@firebase/functions" "0.3.5"
+    "@firebase/messaging" "0.3.9"
+    "@firebase/polyfill" "0.3.4"
+    "@firebase/storage" "0.2.6"
 
 first-chunk-stream@^1.0.0:
   version "1.0.0"
@@ -11504,7 +11527,7 @@ shelljs@~0.5:
   version "0.5.3"
   resolved "https://registry.npmjs.org/shelljs/-/shelljs-0.5.3.tgz#c54982b996c76ef0c1e6b59fbdc5825f5b713113"
 
-shortid@^2.2.14:
+shortid@2.2.14:
   version "2.2.14"
   resolved "https://registry.npmjs.org/shortid/-/shortid-2.2.14.tgz#80db6aafcbc3e3a46850b3c88d39e051b84c8d18"
   dependencies:

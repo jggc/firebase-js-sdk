@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import * as shortid from 'shortid';
+import shortid from 'shortid';
 import { assert, fail } from './assert';
 import { Code, FirestoreError } from './error';
 import * as log from './log';

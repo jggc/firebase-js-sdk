@@ -401,25 +401,37 @@ export abstract class PersistentStream<
 
     this.state = PersistentStreamState.Starting;
 
+    log.debug(
+      LOG_TAG,
+      `auth - getCloseGuardedDispatcher with closeCount: ${this.closeCount} `
+    );
+
     const dispatchIfNotClosed = this.getCloseGuardedDispatcher(this.closeCount);
 
     // TODO(mikelehen): Just use dispatchIfNotClosed, but see TODO below.
     const closeCount = this.closeCount;
 
+    log.debug(LOG_TAG, `auth - credentialsProvider.getToken`);
     this.credentialsProvider.getToken().then(
       token => {
         // Stream can be stopped while waiting for authentication.
         // TODO(mikelehen): We really should just use dispatchIfNotClosed
         // and let this dispatch onto the queue, but that opened a spec test can
         // of worms that I don't want to deal with in this PR.
+        log.debug(LOG_TAG, `auth - credentialsProvider.gotToken`);
         if (this.closeCount === closeCount) {
           // Normally we'd have to schedule the callback on the AsyncQueue.
           // However, the following calls are safe to be called outside the
           // AsyncQueue since they don't chain asynchronous calls
+          log.debug(LOG_TAG, `auth - closeCount is same: calling startStream`);
           this.startStream(token);
         }
       },
       (error: Error) => {
+        log.error(
+          LOG_TAG,
+          `auth - error in credentialsProvider.getToken() ${error.message}`
+        );
         dispatchIfNotClosed(() => {
           const rpcError = new FirestoreError(
             Code.UNKNOWN,
@@ -441,6 +453,7 @@ export abstract class PersistentStream<
 
     this.stream = this.startRpc(token);
     this.stream.onOpen(() => {
+      log.debug(LOG_TAG, 'startStream - onOpen');
       dispatchIfNotClosed(() => {
         assert(
           this.state === PersistentStreamState.Starting,
@@ -451,6 +464,10 @@ export abstract class PersistentStream<
       });
     });
     this.stream.onClose((error?: FirestoreError) => {
+      log.debug(
+        LOG_TAG,
+        `startStream - stream.onClose ${error ? error.message : ''}`
+      );
       dispatchIfNotClosed(() => {
         return this.handleStreamClose(error);
       });
